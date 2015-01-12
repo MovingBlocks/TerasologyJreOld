@@ -1,0 +1,200 @@
+/*
+ * Copyright 2014 MovingBlocks
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'de.undercouch:gradle-download-task:1.0'
+    }
+}
+
+apply plugin: 'download-task'
+
+import de.undercouch.gradle.tasks.download.Download
+import org.tukaani.xz.XZOutputStream
+
+def displayVersion = "8u25"
+
+task clean(type: Delete) {
+    delete 'build'
+}
+
+// This task is extended below by adding dependencies
+task dist() {
+    doLast {
+        println 'Created release: ' + displayVersion
+    }
+}
+
+enum Arch {
+    win32("http://download.oracle.com/otn-pub/java/jdk/8u25-b18/jre-8u25-windows-i586.tar.gz"),
+    win64("http://download.oracle.com/otn-pub/java/jdk/8u25-b18/jre-8u25-windows-x64.tar.gz"),
+    linux32("http://download.oracle.com/otn-pub/java/jdk/8u25-b17/jre-8u25-linux-i586.tar.gz"),
+    linux64("http://download.oracle.com/otn-pub/java/jdk/8u25-b17/jre-8u25-linux-x64.tar.gz"),
+    macosx("http://download.oracle.com/otn-pub/java/jdk/8u25-b17/jre-8u25-macosx-x64.tar.gz");
+
+    Arch(String jreUrl) {
+        this.jreUrl = jreUrl
+    }
+    def String jreUrl
+}
+
+def deleteOptionalJreFiles(File jreDir, Arch arch) {
+    // Move up anything relevant in the Mac OS app hierarchy
+    if (arch == Arch.macosx && new File(jreDir, "Contents/Home").exists()) {
+        new File(jreDir, "Contents/Home").eachFile { file ->
+            file.renameTo(new File(jreDir, file.getName()))
+        }
+        new File(jreDir, "Contents").deleteDir()
+    }
+
+    if (arch == Arch.linux32 || arch == Arch.linux64 || arch == Arch.macosx) {
+        new File(jreDir, "bin").deleteDir()
+        new File(jreDir, "man").deleteDir()
+        new File(jreDir, "plugin").deleteDir()
+    } else {
+        new File(jreDir, "bin/client").deleteDir()
+        new File(jreDir, "bin/dtplugin").deleteDir()
+        new File(jreDir, "bin/plugin2").deleteDir()
+        new File(jreDir, "bin").eachFile { file ->
+            if (file.name.endsWith(".exe") || file.name.endsWith(".cpl") || file.name.startsWith("JavaAccessBridge")
+            || file.name.startsWith("JAWTAccessBridge") || file.name.startsWith("WindowsAccessBridge")) {
+                file.delete()
+            }
+        }
+        [
+            "bin/wsdetect.dll",
+            "bin/java_crw_demo.dll",
+            "bin/deploy.dll",
+            "bin/jfr.dll",
+            // Optional due to JavaFX being optional
+            "bin/decora_sse.dll",
+            "bin/fxplugins.dll",
+            "bin/glass.dll",
+            "bin/glib-lite.dll",
+            "bin/gstreamer-lite.dll",
+            "bin/javafx_font.dll",
+            "bin/javafx_font_t2k.dll",
+            "bin/javafx_iio.dll",
+            "bin/jfxmedia.dll",
+            "bin/jfxwebkit.dll",
+            "bin/prism_common.dll",
+            "bin/prism_d3d.dll",
+            "bin/prism_es2.dll",
+            "bin/prism_sw.dll",
+            "lib/ant-javafx.jar",
+            "lib/javafx.properties",
+            "lib/jfxswt.jar",
+            "lib/ext/jfxrt.jar",
+            "lib/ext/access-bridge.jar",
+            "lib/ext/access-bridge-32.jar",
+            "nashorn.jar"
+        ].each({filename -> new File(jreDir, filename).delete()})
+        new File(jreDir, "lib/plugin.jar").delete()
+        new File(jreDir, "lib/javaws.jar").delete()
+        new File(jreDir, "lib/jfr.jar").delete()
+        new File(jreDir, "lib/deploy.jar").delete()
+        new File(jreDir, "lib/deploy").deleteDir()
+        new File(jreDir, "lib/jfr").deleteDir()
+    }
+}
+
+Arch.values().each { arch ->
+
+	new File(buildDir, "downloads").mkdir();
+
+    String archCap = arch.name().capitalize()
+
+    def jreDownloadFile = new File(buildDir, "downloads/jre-${arch}.tar.gz")
+
+    def downloadTask = task("downloadJre$archCap", type: Download) {
+        src arch.jreUrl
+        dest jreDownloadFile
+        onlyIfNewer true
+        header 'Cookie', 'oraclelicense=accept-securebackup-cookie'
+    }
+
+    def outDir = new File(buildDir, "dist-${arch}")
+
+    def prepareTask = task("prepareJre$archCap", dependsOn: [downloadTask]) {
+        outputs.dir outDir
+        doLast {
+            def jreTemp = new File(buildDir, "jre.tmp")
+            // Clean temporary output dir
+            if (jreTemp.exists()) {
+                assert jreTemp.deleteDir(), "Unable to delete temporary JRE directory $jreTemp"
+            }
+            // Extract the 32-bit tar.gz into jre.tmp
+            copy {
+                from tarTree(resources.gzip(jreDownloadFile))
+                into jreTemp
+            }
+            // There should be a single directory inside jre.tmp (i.e. jre1.8.0_25.jre)
+            def jreTempSubdirs = jreTemp.listFiles({
+                File fnf -> fnf.isDirectory() && fnf.name.startsWith("jre")
+            } as FileFilter)
+            assert jreTempSubdirs.length == 1,
+                    "The expanded JRE should contain a single directory starting with jre. Found: ${jreTempSubdirs}"
+            def originalJreDir = jreTempSubdirs[0]
+
+            // Delete all optional files (see JRE readme)
+            deleteOptionalJreFiles(originalJreDir, arch)
+
+            if (outDir.exists()) {
+                assert outDir.deleteDir(), "Unable to delete JRE directory $outDir"
+            }
+            assert originalJreDir.renameTo(outDir), "Unable to move JRE to final directory $originalJreDir -> $outDir"
+            assert jreTemp.deleteDir(), "Unable to remove temporary JRE directory $jreTemp"
+        }
+    }
+
+    // Download the server vm as well
+    if (arch == Arch.win32) {
+        def jdkFile = new File(buildDir, "downloads/jdk-win32.exe")
+        task ("downloadServerVmWin32", type: Download) {
+            src([
+                    "http://download.oracle.com/otn-pub/java/jdk/8u25-b18/jdk-8u25-windows-i586.exe"
+            ])
+            dest jdkFile
+            onlyIfNewer true
+            header 'Cookie', 'oraclelicense=accept-securebackup-cookie'
+        }
+        task ("extractServerVmWin32", type: ExtractServerVmTask, dependsOn: downloadServerVmWin32) {
+            jdkInstaller = jdkFile
+            outputDir = new File(outDir, "bin/server")
+        }
+        prepareTask.dependsOn extractServerVmWin32
+    }
+
+    def tarTask = task("tar$archCap", type: Tar, dependsOn: prepareTask) {
+        destinationDir buildDir
+        classifier arch.name()
+		from(outDir) {
+			exclude "bin/*"
+		}
+		from(outDir) {
+			include "bin/*"
+			fileMode 0755
+		}
+    }
+
+    def xzTask = task("xz$archCap", type: CompressXzTask, dependsOn: tarTask) {
+        inputFile tarTask.archivePath
+    }
+
+    dist.dependsOn xzTask
+}
