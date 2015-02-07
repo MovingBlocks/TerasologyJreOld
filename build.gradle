@@ -188,17 +188,18 @@ Arch.values().each { arch ->
             jdkInstaller = jdkFile
             outputDir = new File(outDir, "bin/server")
         }
-        prepareTask.dependsOn extractServerVmWin32
+        extractServerVmWin32.dependsOn prepareTask
+        prepareTask = extractServerVmWin32
     }
 
     def tarTask = task("tar$archCap", type: Tar, dependsOn: prepareTask) {
         destinationDir buildDir
         classifier arch.name()
 		from(outDir) {
-			exclude "bin/*"
+			exclude "bin/**/*"
 		}
 		from(outDir) {
-			include "bin/*"
+			include "bin/**/*"
 			fileMode 0755
 		}
     }
