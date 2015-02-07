@@ -28,6 +28,7 @@ import de.undercouch.gradle.tasks.download.Download
 import org.tukaani.xz.XZOutputStream
 
 def displayVersion = "8u25"
+def removeJavaFx = false
 
 task clean(type: Delete) {
     delete 'build'
@@ -87,37 +88,45 @@ def deleteOptionalJreFiles(File jreDir, Arch arch) {
                 file.delete()
             }
         }
-        [
+        def filesToRemove = [
             "bin/wsdetect.dll",
             "bin/java_crw_demo.dll",
             "bin/deploy.dll",
             "bin/jfr.dll",
-            // Optional due to JavaFX being optional
-            "bin/decora_sse.dll",
-            "bin/fxplugins.dll",
-            "bin/glass.dll",
-            "bin/glib-lite.dll",
-            "bin/gstreamer-lite.dll",
-            "bin/javafx_font.dll",
-            "bin/javafx_font_t2k.dll",
-            "bin/javafx_iio.dll",
-            "bin/jfxmedia.dll",
-            "bin/jfxwebkit.dll",
-            "bin/prism_common.dll",
-            "bin/prism_d3d.dll",
-            "bin/prism_es2.dll",
-            "bin/prism_sw.dll",
+            "nashorn.jar",
             "lib/ant-javafx.jar",
-            "lib/javafx.properties",
-            "lib/jfxswt.jar",
-            "lib/ext/jfxrt.jar",
             "lib/ext/access-bridge.jar",
             "lib/ext/access-bridge-32.jar",
-            "nashorn.jar"
-        ].each({filename -> new File(jreDir, filename).delete()})
-        new File(jreDir, "lib/plugin.jar").delete()
-        new File(jreDir, "lib/javaws.jar").delete()
-        new File(jreDir, "lib/jfr.jar").delete()
+            "lib/plugin.jar",
+            "lib/javaws.jar",
+            "lib/jfr.jar"
+        ]
+
+        if (removeJavaFx) {
+            // Optional due to JavaFX being optional
+            filesToRemove.addAll([
+                "bin/decora_sse.dll",
+                "bin/fxplugins.dll",
+                "bin/glass.dll",
+                "bin/glib-lite.dll",
+                "bin/gstreamer-lite.dll",
+                "bin/javafx_font.dll",
+                "bin/javafx_font_t2k.dll",
+                "bin/javafx_iio.dll",
+                "bin/jfxmedia.dll",
+                "bin/jfxwebkit.dll",
+                "bin/prism_common.dll",
+                "bin/prism_d3d.dll",
+                "bin/prism_es2.dll",
+                "bin/prism_sw.dll",
+                "lib/javafx.properties",
+                "lib/jfxswt.jar",
+                "lib/ext/jfxrt.jar"
+            ])
+        }
+
+        filesToRemove.each({filename -> new File(jreDir, filename).delete()})
+
         new File(jreDir, "lib/deploy.jar").delete()
         new File(jreDir, "lib/deploy").deleteDir()
         new File(jreDir, "lib/jfr").deleteDir()
