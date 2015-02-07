@@ -201,7 +201,7 @@ Arch.values().each { arch ->
         prepareTask = extractServerVmWin32
     }
 
-    def tarTask = task("tar$archCap", type: Tar, dependsOn: prepareTask) {
+    def zipTask = task("zip$archCap", type: Tar, dependsOn: prepareTask) {
         destinationDir buildDir
         classifier arch.name()
 		from(outDir) {
@@ -213,9 +213,5 @@ Arch.values().each { arch ->
 		}
     }
 
-    def xzTask = task("xz$archCap", type: CompressXzTask, dependsOn: tarTask) {
-        inputFile tarTask.archivePath
-    }
-
-    dist.dependsOn xzTask
+    dist.dependsOn zipTask
 }
