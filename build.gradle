@@ -63,9 +63,20 @@ def deleteOptionalJreFiles(File jreDir, Arch arch) {
     }
 
     if (arch == Arch.linux32 || arch == Arch.linux64 || arch == Arch.macosx) {
-        new File(jreDir, "bin").deleteDir()
+        // We keep the java binary, but no other binaries
+        new File(jreDir, "bin").eachFile { file ->
+            if (file.name != 'java') {
+                if (file.directory) {
+                    file.deleteDir()
+                } else {
+                    file.delete()
+                }
+            }
+        }
         new File(jreDir, "man").deleteDir()
         new File(jreDir, "plugin").deleteDir()
+        new File(jreDir, "lib/desktop").deleteDir()
+        new File(jreDir, "lib/deploy").deleteDir()
     } else {
         new File(jreDir, "bin/client").deleteDir()
         new File(jreDir, "bin/dtplugin").deleteDir()
