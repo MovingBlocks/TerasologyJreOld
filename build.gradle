@@ -54,7 +54,7 @@ enum Arch {
     def String jreUrl
 }
 
-def deleteOptionalJreFiles(File jreDir, Arch arch) {
+def deleteOptionalJreFiles(File jreDir, Arch arch, boolean removeJavaFx) {
     // Move up anything relevant in the Mac OS app hierarchy
     if (arch == Arch.macosx && new File(jreDir, "Contents/Home").exists()) {
         new File(jreDir, "Contents/Home").eachFile { file ->
@@ -172,7 +172,7 @@ Arch.values().each { arch ->
             def originalJreDir = jreTempSubdirs[0]
 
             // Delete all optional files (see JRE readme)
-            deleteOptionalJreFiles(originalJreDir, arch)
+            deleteOptionalJreFiles(originalJreDir, arch, removeJavaFx)
 
             if (outDir.exists()) {
                 assert outDir.deleteDir(), "Unable to delete JRE directory $outDir"
