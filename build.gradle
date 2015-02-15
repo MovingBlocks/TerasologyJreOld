@@ -79,7 +79,6 @@ def deleteOptionalJreFiles(File jreDir, Arch arch, boolean removeJavaFx) {
         new File(jreDir, "lib/desktop").deleteDir()
         new File(jreDir, "lib/deploy").deleteDir()
     } else {
-        new File(jreDir, "bin/client").deleteDir()
         new File(jreDir, "bin/dtplugin").deleteDir()
         new File(jreDir, "bin/plugin2").deleteDir()
         new File(jreDir, "bin").eachFile { file ->
@@ -92,14 +91,12 @@ def deleteOptionalJreFiles(File jreDir, Arch arch, boolean removeJavaFx) {
             "bin/wsdetect.dll",
             "bin/java_crw_demo.dll",
             "bin/deploy.dll",
-            "bin/jfr.dll",
             "nashorn.jar",
             "lib/ant-javafx.jar",
             "lib/ext/access-bridge.jar",
             "lib/ext/access-bridge-32.jar",
             "lib/plugin.jar",
-            "lib/javaws.jar",
-            "lib/jfr.jar"
+            "lib/javaws.jar"
         ]
 
         if (removeJavaFx) {
@@ -129,7 +126,6 @@ def deleteOptionalJreFiles(File jreDir, Arch arch, boolean removeJavaFx) {
 
         new File(jreDir, "lib/deploy.jar").delete()
         new File(jreDir, "lib/deploy").deleteDir()
-        new File(jreDir, "lib/jfr").deleteDir()
     }
 }
 
