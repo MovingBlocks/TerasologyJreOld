@@ -27,7 +27,7 @@ apply plugin: 'download-task'
 import de.undercouch.gradle.tasks.download.Download
 import org.tukaani.xz.XZOutputStream
 
-def displayVersion = "8u25"
+def displayVersion = "8u45"
 def removeJavaFx = false
 
 task clean(type: Delete) {
@@ -42,11 +42,11 @@ task dist() {
 }
 
 enum Arch {
-    win32("http://download.oracle.com/otn-pub/java/jdk/8u25-b18/jre-8u25-windows-i586.tar.gz"),
-    win64("http://download.oracle.com/otn-pub/java/jdk/8u25-b18/jre-8u25-windows-x64.tar.gz"),
-    linux32("http://download.oracle.com/otn-pub/java/jdk/8u25-b17/jre-8u25-linux-i586.tar.gz"),
-    linux64("http://download.oracle.com/otn-pub/java/jdk/8u25-b17/jre-8u25-linux-x64.tar.gz"),
-    macosx("http://download.oracle.com/otn-pub/java/jdk/8u25-b17/jre-8u25-macosx-x64.tar.gz");
+    win32("http://download.oracle.com/otn-pub/java/jdk/8u45-b15/jre-8u45-windows-i586.tar.gzz"),
+    win64("http://download.oracle.com/otn-pub/java/jdk/8u45-b15/jre-8u45-windows-x64.tar.gz"),
+    linux32("http://download.oracle.com/otn-pub/java/jdk/8u45-b14/jdk-8u45-linux-i586.tar.gz"),
+    linux64("http://download.oracle.com/otn-pub/java/jdk/8u45-b14/jdk-8u45-linux-x64.tar.gz"),
+    macosx("http://download.oracle.com/otn-pub/java/jdk/8u45-b14/jre-8u45-macosx-x64.tar.gz");
 
     Arch(String jreUrl) {
         this.jreUrl = jreUrl
